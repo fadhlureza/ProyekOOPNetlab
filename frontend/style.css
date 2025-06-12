@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+/* Variabel Tema (Default: Dark Mode) */
+:root {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-surface: #2a2a2a;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --accent-color: #3B82F6;
+    --danger-color: #EF4444;
+    --success-color: #22C55E;
+    --border-color: #333333;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+}
+
+body.light-mode {
+    --bg-primary: #F3F4F6;
+    --bg-secondary: #FFFFFF;
+    --bg-surface: #E5E7EB;
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --accent-color: #3B82F6;
+    --danger-color: #EF4444;
+    --success-color: #16A34A;
+    --border-color: #D1D5DB;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* === UTILITIES & LAYOUT === */
+.screen {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s;
+}
+#game-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+.hidden-screen {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.main-menu-layer {
+    z-index: 10;
+}
+
+.game-container {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px var(--shadow-color);
+}
+.game-area {
+    background-color: var(--bg-primary);
+    border: 2px dashed var(--border-color);
+    cursor: crosshair;
+    touch-action: manipulation; 
+    -webkit-user-select: none;
+    user-select: none;
+}
+.title-gradient {
+    background: linear-gradient(45deg, var(--accent-color), #A78BFA);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.text-color-primary { color: var(--text-primary); }
+.text-color-secondary { color: var(--text-secondary); }
+.text-accent { color: var(--accent-color); }
+.text-danger { color: var(--danger-color); }
+.text-danger-color { color: var(--danger-color); }
+.text-success-color { color: var(--success-color); }
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.border-border-color { border-color: var(--border-color); }
+
+
+/* === BUTTONS & INPUTS === */
+.btn {
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s;
+    box-shadow: 0 4px 6px -1px var(--shadow-color);
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px var(--shadow-color);
+}
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.btn-primary { background-color: var(--accent-color); color: white; }
+.btn-secondary { background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); }
+.btn-danger { background-color: var(--danger-color); color: white; }
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+.form-input:focus { outline: none; border-color: var(--accent-color); }
+
+.menu-link {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.menu-link:hover { color: var(--accent-color); }
+
+/* === MODALS === */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+}
+.modal-content {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 25px -5px var(--shadow-color);
+}
+.modal-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.error-text {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+/* === Game Specific === */
+.monster, .item {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out, top 0.1s linear, left 0.1s linear;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 4px solid var(--border-color);
+}
+.item { border-style: dashed; }
+.item-face, .monster-face { font-size: 40px; user-select: none; }
+
+#bonus-monster { background: radial-gradient(circle, #ffd700, #ffbb00); box-shadow: 0 0 25px #ffd700; transform: scale(0.9); }
+#bomb-item { background: radial-gradient(circle, #555, #222); border-color: var(--danger-color); }
+#clock-item { background: radial-gradient(circle, #00f0ff, #00a2ff); border-color: #fff; }
+
+.blue { background: radial-gradient(circle, #4b9dff, #006eff); box-shadow: 0 0 15px #006eff; }
+.red { background: radial-gradient(circle, #EF4444, #B91C1C); box-shadow: 0 0 15px #EF4444; }
+
+.combo-active {
+    animation: pulse 1s infinite;
+}
+@keyframes pulse {
+    50% { transform: scale(1.1); }
+}

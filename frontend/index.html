@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Panic</title>
+    
+    <!-- Memuat Library Eksternal -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
+
+    <!-- Menghubungkan ke file CSS kustom Anda -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode">
+
+    <!-- Main Menu Screen -->
+    <div id="main-menu" class="screen main-menu-layer flex flex-col justify-center items-center p-8 space-y-8">
+        <h1 class="text-6xl md:text-8xl font-bold title-gradient">Monster Panic</h1>
+        
+        <div id="auth-buttons" class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+            <button class="btn btn-primary" onclick="openModal('login-modal')">Login</button>
+            <button class="btn btn-secondary" onclick="openModal('register-modal')">Register</button>
+        </div>
+        
+        <div id="guest-play-button-container" class="w-full max-w-sm md:max-w-md">
+             <p class="text-center my-4 text-color-secondary">atau</p>
+             <button class="btn btn-secondary w-full" onclick="showDifficultyForGuest()">Bermain sebagai Tamu</button>
+        </div>
+
+        <div id="player-menu" class="hidden flex-col justify-center items-center space-y-4">
+            <p class="text-2xl">Selamat Datang, <span id="player-username" class="font-bold text-accent"></span>!</p>
+            <div id="difficulty-buttons" class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                 <button class="btn btn-primary" onclick="startGame('Mudah')">Mulai: Mudah</button>
+                 <button class="btn btn-secondary" onclick="startGame('Normal')">Mulai: Normal</button>
+                 <button class="btn btn-danger" onclick="startGame('Sulit')">Mulai: Sulit</button>
+            </div>
+            <div class="flex space-x-6 mt-4 items-center">
+                <button class="menu-link" onclick="showProfile()">Profil Saya</button>
+                <button class="menu-link" onclick="openModal('settings-modal')">Pengaturan</button>
+                <button class="menu-link text-color-secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <button class="menu-link text-accent mt-8" onclick="showLeaderboard()">Papan Peringkat Global</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden-screen">
+        <div class="game-container w-full max-w-lg md:max-w-5xl p-4 md:p-6 text-center">
+             <div class="flex justify-between items-center mb-4">
+                <button onclick="showMainMenu()" class="text-xl text-danger-color"><i class="fas fa-times-circle"></i> Keluar</button>
+                <h1 id="game-title" class="text-xl md:text-3xl text-accent"></h1>
+                <button id="mute-btn" class="text-xl"><i class="fas fa-volume-up"></i></button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 bg-primary p-3 rounded-lg border border-border-color">
+                 <div><p class="text-base md:text-lg text-color-secondary">SKOR</p><p id="score" class="text-xl md:text-3xl text-success-color font-bold">0</p></div>
+                 <div id="combo-display"><p class="text-base md:text-lg text-color-secondary">KOMBO</p><p id="combo" class="text-xl md:text-3xl font-bold text-orange-400">x0</p></div>
+                 <div id="reaction-display"><p class="text-base md:text-lg text-color-secondary">REAKSI</p><p id="reaction-time" class="text-xl md:text-3xl font-bold text-cyan-400">--ms</p></div>
+                 <div><p class="text-base md:text-lg text-color-secondary">WAKTU</p><p id="time" class="text-xl md:text-3xl font-bold text-yellow-400">0</p></div>
+            </div>
+            <div id="game-area" class="game-area relative w-full h-64 md:h-[550px] rounded-lg overflow-hidden">
+                <div id="monster" class="monster hidden"><span id="monster-face" class="monster-face">😠</span></div>
+                <div id="bonus-monster" class="monster hidden"><span class="monster-face">⭐</span></div>
+                <div id="bomb-item" class="item hidden"><span class="item-face">💣</span></div>
+                <div id="clock-item" class="item hidden"><span class="item-face">🕒</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="login-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Login</h2>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <input id="login-username" type="text" placeholder="Username" required class="form-input">
+                <input id="login-password" type="password" placeholder="Password" required class="form-input">
+                <p id="login-error" class="error-text h-4"></p>
+                <div class="flex space-x-4">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="closeModal('login-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary flex-1">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="register-modal" class="screen modal hidden-screen">
+         <div class="modal-content">
+            <h2 class="modal-title">Registrasi Akun</h2>
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <input id="register-username" type="text" placeholder="Username (3-10 karakter)" required minlength="3" maxlength="10" class="form-input">
+                <input id="register-password" type="password" placeholder="Password (min. 6 karakter)" required minlength="6" class="form-input">
+                <p id="register-error" class="error-text h-4"></p>
+                <div class="flex space-x-4">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="closeModal('register-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary flex-1">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="leaderboard-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Papan Peringkat</h2>
+            <div id="leaderboard-list" class="space-y-2 text-lg h-72 overflow-y-auto"></div>
+            <button class="btn btn-danger mt-6 w-full" onclick="closeModal('leaderboard-modal')">Tutup</button>
+        </div>
+    </div>
+    
+    <div id="profile-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Profil & Pencapaian</h2>
+            <div id="player-stats-container" class="mb-6 p-4 bg-primary rounded-lg text-left"></div>
+            <div id="achievements-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left h-60 overflow-y-auto"></div>
+            <button class="btn btn-danger mt-6 w-full" onclick="closeModal('profile-modal')">Tutup</button>
+        </div>
+    </div>
+    
+    <div id="settings-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Pengaturan</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-primary rounded-lg">
+                    <span class="text-color-primary">Tema Aplikasi</span>
+                    <button id="theme-toggle-btn" class="btn btn-sm btn-secondary"></button>
+                </div>
+                <button class="btn btn-secondary w-full" onclick="openSubModal('change-username-modal')">Ubah Username</button>
+                <button class="btn btn-secondary w-full" onclick="openSubModal('change-password-modal')">Ubah Password</button>
+            </div>
+            <button class="btn btn-danger mt-6 w-full" onclick="closeModal('settings-modal')">Tutup</button>
+        </div>
+    </div>
+
+    <div id="change-username-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Ubah Username</h2>
+            <form onsubmit="handleChangeUsername(event)" class="space-y-4">
+                <input id="new-username" type="text" placeholder="Username Baru" required minlength="3" maxlength="10" class="form-input">
+                <p id="change-username-error" class="error-text h-4"></p>
+                <div class="flex space-x-4">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="closeSubModal('change-username-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary flex-1">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="change-password-modal" class="screen modal hidden-screen">
+         <div class="modal-content">
+            <h2 class="modal-title">Ubah Password</h2>
+            <form onsubmit="handleChangePassword(event)" class="space-y-4">
+                <input id="current-password" type="password" placeholder="Password Saat Ini" required class="form-input">
+                <input id="new-password" type="password" placeholder="Password Baru (min. 6)" required minlength="6" class="form-input">
+                <p id="change-password-error" class="error-text h-4"></p>
+                <div class="flex space-x-4">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="closeSubModal('change-password-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary flex-1">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="guest-difficulty-modal" class="screen modal hidden-screen">
+         <div class="modal-content">
+            <h2 class="modal-title">Pilih Kesulitan (Tamu)</h2>
+            <div class="flex flex-col space-y-4">
+                <button class="btn btn-primary" onclick="startGuestGame('Mudah')">Mudah</button>
+                <button class="btn btn-secondary" onclick="startGuestGame('Normal')">Normal</button>
+                <button class="btn btn-danger" onclick="startGuestGame('Sulit')">Sulit</button>
+            </div>
+            <button class="btn btn-secondary mt-6 w-full" onclick="closeModal('guest-difficulty-modal')">Batal</button>
+        </div>
+    </div>
+    
+    <div id="guest-game-over-modal" class="screen modal hidden-screen">
+        <div class="modal-content">
+            <h2 class="modal-title">Game Selesai!</h2>
+            <p class="text-lg mb-4">Skor Akhir Anda: <span id="guest-final-score-display" class="font-bold text-success-color"></span></p>
+            <p class="text-color-secondary">Daftar atau Login untuk menyimpan skormu dan masuk ke papan peringkat!</p>
+            <div class="flex space-x-4 mt-6">
+                 <button class="btn btn-primary flex-1" onclick="openRegisterFromGuest()">Register</button>
+                 <button class="btn btn-secondary flex-1" onclick="showMainMenu()">Menu Utama</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
