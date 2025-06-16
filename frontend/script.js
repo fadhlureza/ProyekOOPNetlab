@@ -15,26 +15,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Session & State ---
     let session = { token: null, playerId: null, username: null, isGuest: false };
+    let leaderboardFilters = { mode: 'All', difficulty: 'All' };
+    let lastGameSettings = { difficulty: 'Normal' };
     let gameMode, difficulty, initialDuration, score, timeLeft, hitStreak, combo, maxCombo, redTimestamp;
     let isGameActive, isRed, isMuted = false;
     let gameTimer, monsterTimer, bonusItemTimer;
 
     const difficulties = {
-        'Mudah': { redDuration: [1000, 800], penaltyMultiplier: 0.5, itemChance: 0.5 },
-        'Normal': { redDuration: [700, 500], penaltyMultiplier: 1, itemChance: 0.35 },
-        'Sulit': { redDuration: [500, 400], penaltyMultiplier: 1.5, itemChance: 0.2 }
+        'Mudah': { name: 'Mudah', redDuration: [900, 700], penaltyMultiplier: 0.5, itemChance: 0.5 },
+        'Normal': { name: 'Normal', redDuration: [600, 500], penaltyMultiplier: 1, itemChance: 0.35 },
+        'Sulit': { name: 'Sulit', redDuration: [450, 350], penaltyMultiplier: 1.5, itemChance: 0.2 }
     };
 
     const API_BASE_URL = 'http://localhost:8080/api';
-    const audio = { 
-        hit: () => { if(!isMuted) console.log('SFX: Hit'); },
-        miss: () => { if(!isMuted) console.log('SFX: Miss'); },
-        powerUp: () => { if(!isMuted) console.log('SFX: Power Up'); },
-    };
 
     // =================================================================================
-    // --- MANAJEMEN TEMA & UI ---
+    // --- MANAJEMEN UI, SESI, OTENTIKASI, PROFIL ---
     // =================================================================================
+    
     function applyTheme(theme) {
         if (theme === 'light') {
             body.classList.add('light-mode');
@@ -55,10 +53,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('monster_panic_theme') || 'dark';
         applyTheme(savedTheme);
     }
-
-    // =================================================================================
-    // --- MANAJEMEN SESI & OTENTIKASI ---
-    // =================================================================================
+    
     function updateLoginStateUI() {
         if (!authButtons || !guestPlayBtnContainer || !playerMenu || !playerUsernameEl) {
             return;
@@ -145,10 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
             errorEl.textContent = error.message;
         }
     }
-
-    // =================================================================================
-    // --- MANAJEMEN PROFIL ---
-    // =================================================================================
+    
     window.handleChangeUsername = async function(event) {
         event.preventDefault();
         const newUsername = document.getElementById('new-username').value;
@@ -177,7 +169,7 @@ window.addEventListener('DOMContentLoaded', () => {
             errorEl.textContent = error.message;
         }
     }
-
+    
     window.showProfile = async function() {
         if (!session.token) return;
         openModal('profile-modal');
@@ -205,7 +197,7 @@ window.addEventListener('DOMContentLoaded', () => {
             statsContainer.innerHTML = `<p class="text-danger">${error.message}</p>`;
         }
     }
-
+    
     // =================================================================================
     // --- LOGIKA GAME & LAIN-LAIN ---
     // =================================================================================
@@ -215,7 +207,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     window.showMainMenu = function() {
-        ['login-modal', 'register-modal', 'leaderboard-modal', 'profile-modal', 'settings-modal', 'guest-difficulty-modal', 'guest-game-over-modal', 'change-username-modal', 'change-password-modal'].forEach(closeModal);
+        ['login-modal', 'register-modal', 'leaderboard-modal', 'profile-modal', 'settings-modal', 'guest-difficulty-modal', 'guest-game-over-modal', 'change-username-modal', 'change-password-modal', 'logged-in-game-over-modal'].forEach(closeModal);
+        
         showScreen('main-menu');
         if(isGameActive) {
             isGameActive = false;
@@ -236,33 +229,45 @@ window.addEventListener('DOMContentLoaded', () => {
         closeModal(modalId);
         openModal('settings-modal');
     }
-
-    window.showLeaderboard = async function() {
+    
+    window.showLeaderboard = function() {
         openModal('leaderboard-modal');
+        leaderboardFilters = { mode: 'All', difficulty: 'All' };
+        document.querySelectorAll('#leaderboard-mode-filter .filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('#leaderboard-mode-filter .filter-btn[data-mode="All"]').classList.add('active');
+        document.querySelectorAll('#leaderboard-difficulty-filter .filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('#leaderboard-difficulty-filter .filter-btn[data-difficulty="All"]').classList.add('active');
+        fetchAndDisplayLeaderboard();
+    }
+    
+    async function fetchAndDisplayLeaderboard() {
         const listEl = document.getElementById('leaderboard-list');
         listEl.innerHTML = '<p>Memuat data...</p>';
+        const params = new URLSearchParams();
+        if (leaderboardFilters.mode !== 'All') params.append('mode', leaderboardFilters.mode);
+        if (leaderboardFilters.difficulty !== 'All') params.append('difficulty', leaderboardFilters.difficulty);
+        
         try {
-            const scores = await handleApiRequest('/records/leaderboard');
+            const scores = await handleApiRequest(`/records/leaderboard?${params.toString()}`);
             if (scores.length === 0) {
-                listEl.innerHTML = '<p>Belum ada skor. Jadilah yang pertama!</p>';
+                listEl.innerHTML = '<p class="text-center text-color-secondary">Tidak ada skor untuk filter ini.</p>';
                 return;
             }
             listEl.innerHTML = scores.map((entry, index) => `
                 <div class="flex justify-between items-center p-2 rounded ${index === 0 ? 'bg-yellow-600/50' : 'bg-surface'}">
-                    <span>#${index + 1} ${entry.name}</span>
+                    <span class="font-semibold">#${index + 1} ${entry.name}</span>
                     <span class="font-bold text-success-color">${entry.score}</span>
-                    <span class="text-xs text-color-secondary">${entry.mode}</span>
-                </div>
-            `).join('');
+                    <span class="text-xs text-color-secondary">${entry.mode.replace(/_/g, ' ')}</span>
+                </div>`).join('');
         } catch (error) {
             listEl.innerHTML = `<p class="text-danger">${error.message}</p>`;
         }
     }
-
+    
     async function submitScore() {
         if (!session.token || session.isGuest) { return; }
         try {
-            const payload = { score, game_mode: `${gameMode} - ${Object.keys(difficulties).find(key => difficulties[key] === difficulty)}`, max_combo: maxCombo };
+            const payload = { score, game_mode: `${gameMode} - ${difficulty.name}`, max_combo: maxCombo };
             await handleApiRequest('/records', 'POST', payload);
             await checkAchievements(payload);
         } catch (error) {
@@ -285,8 +290,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.startGame = function(level) {
         difficulty = difficulties[level];
+        lastGameSettings.difficulty = level;
         showScreen('game-screen');
-        setTimeout(initGame, 50);
+        setTimeout(initGame, 100);
+    }
+    
+    window.playAgain = function() {
+        closeModal('logged-in-game-over-modal');
+        startGame(lastGameSettings.difficulty);
     }
 
     function initGame() {
@@ -309,7 +320,9 @@ window.addEventListener('DOMContentLoaded', () => {
         clearTimeout(bonusItemTimer);
         if (session.token && !session.isGuest) {
             await submitScore();
-            showMainMenu();
+            const finalScoreEl = document.getElementById('final-score-display');
+            if(finalScoreEl) finalScoreEl.textContent = score;
+            openModal('logged-in-game-over-modal');
         } else {
             const guestScoreEl = document.getElementById('guest-final-score-display');
             if (guestScoreEl) guestScoreEl.textContent = score;
@@ -341,15 +354,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (timeEl) timeEl.textContent = timeLeft;
         centerMonster(monsterEl);
     }
-    
+
     function scheduleNextMonster() {
         if (!isGameActive) return;
-        const spawnDelay = gameMode === 'AIM_TRAINER' ? 300 + Math.random() * 400 : 500 + Math.random() * 500;
+        const spawnDelay = gameMode === 'AIM_TRAINER' ? 250 + Math.random() * 300 : 400 + Math.random() * 500;
         monsterTimer = setTimeout(spawnRedMonster, spawnDelay);
     }
 
     function spawnRedMonster() {
         if (!isGameActive) return;
+        
         if (gameMode === 'AIM_TRAINER') moveMonsterRandomly(monsterEl);
         else centerMonster(monsterEl);
         
@@ -376,25 +390,31 @@ window.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         event.stopPropagation();
         
+        if (!isGameActive || !isRed) return;
+
+        const reactionTime = Date.now() - redTimestamp;
+        reactionTimeEl.textContent = `${reactionTime}ms`;
+        
+        if (gameMode === 'AIM_TRAINER') handleAimTrainerHit(reactionTime); 
+        else handleReactionTestHit(reactionTime);
+        
+        isRed = false;
+        clearTimeout(monsterTimer);
+        monsterEl.classList.add('hidden');
+        scheduleNextMonster();
+    }
+    
+    // PERBAIKAN UTAMA: Fungsi ini sekarang menangani semua klik di area game
+    function handleGameAreaClick(event) {
         if (!isGameActive) return;
 
-        if (isRed) {
-            const reactionTime = Date.now() - redTimestamp;
-            reactionTimeEl.textContent = `${reactionTime}ms`;
-            
-            if (gameMode === 'AIM_TRAINER') handleAimTrainerHit(reactionTime); 
-            else handleReactionTestHit(reactionTime);
-            
-            isRed = false;
-            clearTimeout(monsterTimer);
-            monsterEl.classList.add('hidden');
-            scheduleNextMonster();
+        // Hanya terapkan penalti jika yang diklik adalah area kosong, 
+        // BUKAN monster atau item power-up
+        const isTargetGameArea = event.target === gameArea;
+        
+        if (isTargetGameArea) {
+            applyPenalty('Meleset!');
         }
-    }
-
-    function handleGameAreaClick(event) {
-        if (gameMode !== 'AIM_TRAINER' || !isGameActive || event.target !== gameArea) return;
-        applyPenalty('Meleset!');
     }
 
     function handleAimTrainerHit(reactionTime) {
@@ -487,11 +507,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!gameArea || !el) return;
         const rect = gameArea.getBoundingClientRect();
         const size = el.offsetWidth;
+        const padding = 10;
         if (rect.width === 0 || rect.height === 0) {
             centerMonster(el); return;
         }
-        el.style.left = `${Math.random() * (rect.width - size)}px`;
-        el.style.top = `${Math.random() * (rect.height - size)}px`;
+        el.style.left = `${padding + (Math.random() * (rect.width - size - (padding * 2)))}px`;
+        el.style.top = `${padding + (Math.random() * (rect.height - size - (padding * 2)))}px`;
         el.style.transform = 'none';
     }
 
@@ -522,15 +543,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
     const clickEvent = 'ontouchstart' in window ? 'touchstart' : 'click';
-
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     if (muteBtn) muteBtn.addEventListener('click', toggleMute);
-    
     if (monsterEl) monsterEl.addEventListener(clickEvent, handleMonsterClick);
     if (bonusMonsterEl) bonusMonsterEl.addEventListener(clickEvent, (e) => handleItemClick(e, 'BONUS'));
     if (bombItemEl) bombItemEl.addEventListener(clickEvent, (e) => handleItemClick(e, 'BOMB'));
     if (clockItemEl) clockItemEl.addEventListener(clickEvent, (e) => handleItemClick(e, 'CLOCK'));
-    if (gameArea) gameArea.addEventListener('click', handleGameAreaClick);
+    if (gameArea) gameArea.addEventListener(clickEvent, handleGameAreaClick);
+    
+    document.getElementById('leaderboard-mode-filter')?.addEventListener('change', (e) => {
+        leaderboardFilters.mode = e.target.value;
+        fetchAndDisplayLeaderboard();
+    });
+    document.getElementById('leaderboard-difficulty-filter')?.addEventListener('change', (e) => {
+        leaderboardFilters.difficulty = e.target.value;
+        fetchAndDisplayLeaderboard();
+    });
 
+    // Jalankan fungsi awal
     checkSession();
 });

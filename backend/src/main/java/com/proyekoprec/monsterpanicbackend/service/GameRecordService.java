@@ -9,7 +9,7 @@ import com.proyekoprec.monsterpanicbackend.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Import Transactional
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,13 +37,25 @@ public class GameRecordService {
         newRecord.setMaxCombo(recordRequest.getMax_combo());
 
         GameRecord savedRecord = gameRecordRepository.save(newRecord);
-
         achievementService.checkAndUnlockAchievements(username, recordRequest);
 
         return savedRecord;
     }
 
-    public List<LeaderboardDTO> getLeaderboard() {
-        return gameRecordRepository.findTopScores();
+    // PERBAIKAN: Logika untuk menangani berbagai kombinasi filter
+    public List<LeaderboardDTO> getLeaderboard(String mode, String difficulty) {
+        boolean modeIsPresent = mode != null && !mode.trim().isEmpty() && !mode.equalsIgnoreCase("All");
+        boolean difficultyIsPresent = difficulty != null && !difficulty.trim().isEmpty() && !difficulty.equalsIgnoreCase("All");
+
+        if (modeIsPresent && difficultyIsPresent) {
+            String combinedFilter = "%" + mode + "%" + difficulty + "%";
+            return gameRecordRepository.findTopScoresByModeAndDifficulty(combinedFilter);
+        } else if (modeIsPresent) {
+            return gameRecordRepository.findTopScoresByMode("%" + mode + "%");
+        } else if (difficultyIsPresent) {
+            return gameRecordRepository.findTopScoresByDifficulty("%" + difficulty + "%");
+        } else {
+            return gameRecordRepository.findTopScores();
+        }
     }
 }
