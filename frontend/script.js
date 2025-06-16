@@ -404,12 +404,9 @@ window.addEventListener('DOMContentLoaded', () => {
         scheduleNextMonster();
     }
     
-    // PERBAIKAN UTAMA: Fungsi ini sekarang menangani semua klik di area game
     function handleGameAreaClick(event) {
         if (!isGameActive) return;
 
-        // Hanya terapkan penalti jika yang diklik adalah area kosong, 
-        // BUKAN monster atau item power-up
         const isTargetGameArea = event.target === gameArea;
         
         if (isTargetGameArea) {
@@ -560,6 +557,5 @@ window.addEventListener('DOMContentLoaded', () => {
         fetchAndDisplayLeaderboard();
     });
 
-    // Jalankan fungsi awal
     checkSession();
 });
